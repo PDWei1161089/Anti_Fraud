@@ -1,0 +1,922 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>反诈实战模拟器 · 中学生版</title>
+<style>
+  :root {
+    --card: #ffffff;
+    --primary: #3d6bff;
+    --primary-dark: #294fd6;
+    --accent: #1f2a44;
+    --text: #24304a;
+    --muted: #6f7d99;
+    --radius: 18px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body {
+    font-family: "PingFang SC", "Microsoft YaHei", "Segoe UI", sans-serif;
+    background: linear-gradient(165deg, #0f1730 0%, #1b2a55 45%, #12333d 100%);
+    color: var(--text);
+    min-height: 100vh;
+  }
+  .app { max-width: 780px; margin: 0 auto; padding: 20px 14px 48px; }
+
+  /* ---------- 首页 ---------- */
+  .hero { text-align: center; padding: 30px 10px 8px; color: #dfe8ff; }
+  .hero .badge { display: inline-block; font-size: 12.5px; letter-spacing: 3px; color: #8fb0ff; border: 1px solid #3a55a0; border-radius: 999px; padding: 5px 16px; }
+  .hero h1 { font-size: 32px; margin: 14px 0 6px; color: #fff; }
+  .hero h1 em { font-style: normal; background: linear-gradient(90deg, #6ea8ff, #b58cff, #57e0b0); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .hero p { color: #9fb0d6; font-size: 14.5px; line-height: 1.7; }
+  .hero p b { color: #ffd479; font-weight: normal; }
+
+  .section-label { color: #9fb0d6; font-size: 13px; letter-spacing: 2px; margin: 28px 4px 12px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(215px, 1fr)); gap: 13px; }
+  .card {
+    background: #182345; border: 1px solid #2c3c72; border-radius: var(--radius); padding: 18px 16px; cursor: pointer;
+    transition: transform .18s, border-color .18s, background .18s; text-align: left; position: relative; overflow: hidden;
+  }
+  .card:hover { transform: translateY(-4px); border-color: #6ea8ff; background: #1d2a55; }
+  .card .top { display: flex; align-items: center; gap: 10px; }
+  .card .icon { font-size: 30px; }
+  .card h3 { font-size: 16.5px; color: #f0f4ff; }
+  .card p { font-size: 13px; color: #9fb0d6; line-height: 1.6; margin-top: 9px; }
+  .card .meta { margin-top: 11px; font-size: 11.5px; color: #7f93c4; }
+  .card .meta span { color: #ffb46a; }
+  .card .go { position: absolute; right: 14px; top: 18px; color: #5a78c9; font-size: 18px; }
+
+  .principle { margin-top: 26px; background: rgba(255,255,255,.05); border: 1px solid #2c3c72; border-radius: var(--radius); padding: 18px 20px; }
+  .principle b { color: #ffd479; font-size: 15px; }
+  .principle li { margin: 8px 0 0 18px; font-size: 13.5px; color: #c4d1ee; line-height: 1.7; }
+  .principle li b { color: #fff; font-weight: 600; }
+
+  /* ---------- 聊天 ---------- */
+  #chat-screen { display: none; }
+  .chat-header {
+    background: #182345; border: 1px solid #2c3c72; border-radius: var(--radius); padding: 13px 15px; display: flex;
+    align-items: center; gap: 12px; position: sticky; top: 10px; z-index: 5;
+  }
+  .chat-header .avatar { font-size: 30px; }
+  .chat-header .info { flex: 1; }
+  .chat-header .info b { font-size: 15.5px; color: #f0f4ff; }
+  .chat-header .info small { display: block; color: #8fa0c8; font-size: 12px; margin-top: 1px; }
+  .progress { height: 6px; background: #0f1730; border-radius: 99px; overflow: hidden; margin-top: 7px; }
+  .progress i { display: block; height: 100%; width: 0%; background: linear-gradient(90deg, #6ea8ff, #57e0b0); border-radius: 99px; transition: width .5s; }
+  .score-chip { background: #101a38; color: #ffd479; font-weight: bold; border-radius: 999px; padding: 8px 13px; font-size: 13.5px; border: 1px solid #2c3c72; white-space: nowrap; }
+  .back-btn { background: #101a38; border: 1px solid #2c3c72; border-radius: 11px; padding: 7px 12px; cursor: pointer; font-size: 13.5px; color: #9fb0d6; }
+  .back-btn:hover { color: #fff; border-color: #6ea8ff; }
+
+  .chat-area {
+    margin-top: 13px; background: #121c3d; border: 1px solid #24335f; border-radius: var(--radius); padding: 16px 15px;
+    min-height: 320px; max-height: 50vh; overflow-y: auto; display: flex; flex-direction: column; gap: 11px;
+  }
+  .msg { display: flex; gap: 10px; animation: pop .3s ease; max-width: 94%; }
+  @keyframes pop { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  .msg .mini-avatar { font-size: 20px; width: 32px; height: 32px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; background: #1c2a52; border-radius: 50%; }
+  .msg .bubble { background: #1a2549; border-radius: 4px 15px 15px 15px; padding: 11px 14px; font-size: 14.5px; line-height: 1.7; color: #dde6fa; white-space: pre-wrap; }
+  .msg.user { align-self: flex-end; flex-direction: row-reverse; }
+  .msg.user .bubble { background: linear-gradient(135deg, #3d6bff, #6a4dff); color: #fff; border-radius: 15px 4px 15px 15px; }
+  .msg.lesson .bubble { background: rgba(255,212,121,.09); border: 1px solid rgba(255,212,121,.35); color: #ffe4ad; }
+  .msg.case .bubble { background: rgba(87,224,176,.07); border: 1px solid rgba(87,224,176,.3); color: #bdf2dd; }
+  .msg.react .bubble { background: #141f42; border: 1px dashed #3a55a0; color: #a9b8dd; font-size: 13.5px; }
+  .bubble .who { display: block; font-size: 11.5px; color: #8fa0c8; margin-bottom: 4px; font-weight: bold; letter-spacing: 1px; }
+  .typing { display: inline-flex; gap: 5px; padding: 5px 2px; }
+  .typing i { width: 7px; height: 7px; border-radius: 50%; background: #5a78c9; animation: blink 1s infinite; }
+  .typing i:nth-child(2) { animation-delay: .2s; } .typing i:nth-child(3) { animation-delay: .4s; }
+  @keyframes blink { 0%,100% { opacity: .25; } 50% { opacity: 1; } }
+
+  .choices { display: flex; flex-direction: column; gap: 9px; margin-top: 12px; }
+  .choice {
+    background: #182345; border: 1.5px solid #33457f; border-radius: 14px; padding: 13px 16px; font-size: 14.5px;
+    cursor: pointer; text-align: left; transition: all .15s; font-family: inherit; color: #e6ecff; line-height: 1.55;
+  }
+  .choice:hover { border-color: #6ea8ff; background: #1d2a55; transform: translateX(4px); }
+  .choice:disabled { cursor: default; opacity: .4; }
+  .choice.picked { border-color: #6ea8ff; background: #20305f; opacity: 1 !important; font-weight: bold; }
+
+  .input-row { display: flex; gap: 9px; margin-top: 2px; }
+  .input-row input {
+    flex: 1; background: #101a38; border: 1.5px solid #33457f; border-radius: 12px; padding: 12px 14px;
+    font-size: 14.5px; font-family: inherit; outline: none; color: #fff;
+  }
+  .input-row input::placeholder { color: #63749e; }
+  .input-row input:focus { border-color: #6ea8ff; }
+  .input-row button {
+    background: var(--primary); color: #fff; border: none; border-radius: 12px; padding: 0 20px; font-size: 15px; cursor: pointer; font-family: inherit;
+  }
+  .input-row button:hover { background: var(--primary-dark); }
+  .hint-text { font-size: 12px; color: #7f93c4; margin-top: 7px; }
+
+  /* ---------- 报告 ---------- */
+  #report-screen { display: none; }
+  .report { background: #182345; border: 1px solid #2c3c72; border-radius: 22px; padding: 30px 24px; margin-top: 16px; text-align: center; animation: pop .4s ease; }
+  .report .medal { font-size: 60px; }
+  .report h2 { font-size: 22px; color: #f0f4ff; margin: 10px 0 4px; }
+  .report .level { display: inline-block; padding: 6px 20px; border-radius: 999px; color: #0f1730; font-weight: bold; font-size: 15px; margin: 10px 0; }
+  .stars { font-size: 24px; letter-spacing: 5px; margin: 6px 0; }
+  .score-big { font-size: 48px; font-weight: 800; color: #ffd479; }
+  .score-big small { font-size: 16px; color: #8fa0c8; font-weight: normal; }
+  .report p.desc { color: #9fb0d6; margin: 8px auto 20px; line-height: 1.7; max-width: 540px; font-size: 14.5px; }
+  .review { text-align: left; margin: 0 auto 20px; max-width: 580px; }
+  .review h3 { font-size: 15px; color: #f0f4ff; margin-bottom: 10px; }
+  .cases { text-align: left; margin: 0 auto 20px; max-width: 580px; }
+  .cases h3 { font-size: 15px; color: #f0f4ff; margin-bottom: 10px; }
+  .case-item { background: #121c3d; border: 1px solid #24335f; border-radius: 12px; padding: 12px 14px; margin-bottom: 9px; color: #c4d1ee; }
+  .case-item b { color: #f0f4ff; font-size: 14px; line-height: 1.5; display: block; }
+  .case-item p { color: #c4d1ee; font-size: 13.5px; line-height: 1.7; margin-top: 5px; }
+  .case-item .src { color: #8fa0c8; font-size: 11.5px; margin-top: 6px; display: block; }
+  .review-item { display: flex; gap: 10px; align-items: flex-start; background: #121c3d; border: 1px solid #24335f; border-radius: 12px; padding: 10px 13px; margin-bottom: 8px; font-size: 13.5px; line-height: 1.6; color: #c4d1ee; }
+  .review-item .mark { font-size: 18px; flex-shrink: 0; }
+  .report-actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+  .btn { border: none; border-radius: 999px; padding: 12px 26px; font-size: 15px; font-weight: bold; cursor: pointer; font-family: inherit; transition: transform .15s; }
+  .btn:hover { transform: scale(1.04); }
+  .btn-primary { background: linear-gradient(135deg, #3d6bff, #6a4dff); color: #fff; }
+  .btn-ghost { background: transparent; color: #9fb0d6; border: 1px solid #33457f; }
+  .source-note { margin-top: 16px; font-size: 11.5px; color: #63749e; line-height: 1.7; }
+
+  @media (max-width: 480px) {
+    .hero h1 { font-size: 25px; }
+    .chat-area { max-height: 46vh; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ============ 首页 ============ -->
+  <div id="home-screen">
+    <div class="hero">
+      <div class="badge">ANTI-FRAUD SIMULATOR</div>
+      <h1>反诈实战<em>模拟器</em></h1>
+      <p>屏幕那头的话术，就来自近期公开的警情通报：<br>12 岁、13 岁、14 岁的学生都中过招，单笔损失从几千元到十几万元。<br>进入对话，同样的话术落到你身上，<b>你能不能扛住？</b></p>
+    </div>
+    <div class="section-label">选择一个场景开始演练</div>
+    <div class="grid" id="scenario-grid"></div>
+    <div class="principle">
+      <b>🛡️ 全国警方推广的「三不一多」原则</b>
+      <ol>
+        <li><b>未知链接不点击</b> —— 钓鱼网站就等你的那一下。</li>
+        <li><b>陌生来电不轻信</b> —— 自称官方、警察、律师的，先挂断再说。</li>
+        <li><b>个人信息不透露</b> —— 身份证号、验证码、支付密码，给出去就是把钱递出去。</li>
+        <li><b>转账汇款多核实</b> —— 涉及钱的一切操作，先告诉父母，必要时打 96110。</li>
+      </ol>
+    </div>
+  </div>
+
+  <!-- ============ 聊天模拟 ============ -->
+  <div id="chat-screen">
+    <div class="chat-header">
+      <button class="back-btn" onclick="goHome()">← 退出</button>
+      <div class="avatar" id="chat-avatar">🎮</div>
+      <div class="info">
+        <b id="chat-name">模拟对话</b>
+        <small id="chat-sub">回合 1 / 5</small>
+        <div class="progress"><i id="progress-bar"></i></div>
+      </div>
+      <div class="score-chip">反诈力 <span id="score-num">100</span></div>
+    </div>
+    <div class="chat-area" id="chat-area"></div>
+    <div class="choices" id="choices-area"></div>
+  </div>
+
+  <!-- ============ 结果报告 ============ -->
+  <div id="report-screen">
+    <div class="report" id="report-box"></div>
+  </div>
+</div>
+
+<script>
+/* ================================================================
+   场景数据 —— 全部改编自公安机关与媒体公布的真实案例
+   评分：安全(20) / 有风险(10) / 危险(0)
+================================================================ */
+const SCENARIOS = [
+  {
+    id: "skin",
+    icon: "🎮",
+    name: "免费皮肤连环局",
+    desc: "游戏公屏上的『免费送皮肤』，害过 5 万元存款的家庭。",
+    tag: "话术取材：岳阳、宜宾、北京警方公布警情",
+    loss: "同类案件单笔最高损失 5 万余元",
+    cases: [
+      { t: "游戏公屏『免费送皮肤』，5 万存款一夜清空", d: "2026 年 5 月，岳阳 14 岁初中生小李玩游戏时轻信公屏私信『免费送皮肤』。对方发起 QQ 视频，发现她是未成年人后，诱导她拿来妈妈的手机，在视频镜头下打开微信、支付宝、手机网银扫码转账、输入密码、提供短信验证码，还按要求删光银行扣款短信、再去拿爸爸的手机继续操作。家长发现报警时，账户 5 万余元已被全部转走。", s: "红网时刻 · 岳阳白石岭警方警情通报" },
+      { t: "『免费领皮肤』引来假警察，4 万元血汗钱被转走", d: "宜宾 14 岁少年杨某关注『免费领游戏皮肤，加关注私聊』的账号后，对方回关即自称民警，发来伪造的『立案判决书』，称原号主因诈骗被抓、粉丝需协助『排查共犯』；随后强制语音、不许挂断、不许告诉家人，再开视频指挥他悄悄拿来爷爷奶奶的手机上传证件、转账操作，4 万元被一步步转走。", s: "宜宾市公安局防范警示" },
+      { t: "『账户被冻结 60000 元』恐吓话术，多次得手", d: "北京警方通报：多名学生加 QQ 领皮肤后，对方通过语音听出是未成年人，突然严厉指责『你是未成年人，导致我公司账户被冻结 60000 元，你要对我负责，不然就报警抓你，还要告诉你的老师和家长』。孩子又自责又害怕，拿来长辈的手机按对方发的收款码输入密码，一笔笔转出；转账触发限制后，骗子又让他改买电子充值卡继续行骗。", s: "光明网 · 北京警方典型案例" }
+    ],
+    steps: [
+      {
+        bot: "【游戏公屏私信】兄弟，看你段位挺高，我号里有一套限定皮肤可以白送你，加个QQ：8357****21，我直接发你。带上不？",
+        who: "游戏『队友』",
+        allowInput: true,
+        inputHint: "输入你会怎么回他，或者选下面的选项",
+        options: [
+          { text: "白送的皮肤不要白不要，加！", score: 0, kind: "bad", feedback: "❌ 你已经上钩了。2026年5月，岳阳14岁初中生小李就是从游戏公屏的『免费送皮肤』私信开始，最后妈妈卡里5万余元全部被骗走。公屏私信送皮肤=钓鱼的第一步。" },
+          { text: "不私聊。真要送东西官方不会走私信，举报拉黑。", score: 20, kind: "good", feedback: "✅ 判断正确。官方活动只在游戏内公告和官方渠道发布，任何『加QQ领皮肤』都是引流话术。举报+拉黑，一步到位。" },
+          { text: "先加上看看，不转账应该没事。", score: 10, kind: "ok", feedback: "⚠️ 有风险。骗子要的不是你现在的钱，而是你的信任。加了好友，后面就会用语音通话摸清你的年龄、家庭情况，再量身定制恐吓剧本——北京警方公布的案例里，骗子正是通过语音判断出对方是未成年人后才发难的。" }
+        ]
+      },
+      {
+        bot: "【QQ语音接通后】……等等，你是未成年？你怎么不早说！因为你这个未成年人身份，我公司的账户现在被冻结了60000元！你要对我负责，不然我就报警，让警察抓你，还要告诉你的老师和家长！",
+        who: "对方突然变脸",
+        allowInput: true,
+        inputHint: "对方突然翻脸恐吓，你会怎么回应？（输入你的回答）",
+        options: [
+          { text: "害怕被爸妈老师知道，问他怎么解决。", score: 0, kind: "bad", feedback: "❌ 这正是骗子的剧本。北京警方披露：学生晨晨被这样恐吓后『既自责又害怕，连忙恳求对方不要惊动老师和家长』——恐惧就是骗子最想控制你的方式。账户被冻结是编的，起诉父母是编的，全部是话术。" },
+          { text: "挂断。账户冻结、报警抓人这些说法不合逻辑，告诉父母。", score: 20, kind: "good", feedback: "✅ 冷静。分析一下：他送你东西凭什么让你『负责』？商户被冻结找支付平台就行，轮不到你赔。恐吓式施压恰恰暴露了他是骗子。挂断、告诉父母，必要时打96110。" },
+          { text: "跟他讲道理：冻结账户是你自己的问题，跟我无关。", score: 10, kind: "ok", feedback: "⚠️ 你没上当，但和骗子纠缠很危险——他会不断升级恐吓直到你慌。对骗子不需要讲道理，直接挂断、留证据、告诉大人。" }
+        ]
+      },
+      {
+        bot: "【对方】想解决问题很简单：拿你家长的手机来，我发二维码，你扫码操作『解冻』，钱会原路退回，谁都不会知道。……你开着视频，把摄像头对准你妈妈的手机屏幕，我看着你操作。",
+        who: "对方",
+        options: [
+          { text: "偷偷拿来妈妈的手机，按他说的扫码。", score: 0, kind: "bad", feedback: "❌ 岳阳案例里，14岁的小李就是在视频通话中被诱导打开妈妈的微信、支付宝和手机网银，对方实时看着屏幕指挥扫码、输密码——5万元就是这样一笔笔转走的。摄像头对着家长手机=把钱包摊开给骗子看。" },
+          { text: "拒绝。绝对不拿家长手机操作，也不开视频，挂断。", score: 20, kind: "good", feedback: "✅ 满分。『拿家长手机』是所有未成年人骗局的关键一步，走到这一步必须立刻终止。你守住了这条线，家里的钱就安全了。" },
+          { text: "说手机被家长锁起来了，先拖住他。", score: 10, kind: "ok", feedback: "⚠️ 拖延没有错，但只要你还在线，骗子就会继续施压『再不去拿就报警』。正确做法是马上挂断并告诉父母，让大人来处理。" }
+        ]
+      },
+      {
+        bot: "【对方】马上就成功了！刚发你妈妈手机上的短信验证码发给我，然后把她收到的那些银行短信全部删掉，不然系统会风控失败，钱就退不回来了！",
+        who: "对方",
+        allowInput: true,
+        inputHint: "验证码和删短信的要求，你怎么处理？",
+        options: [
+          { text: "照做，马上就要拿回皮肤了。", score: 0, kind: "bad", feedback: "❌ 验证码=转账的最后一道门。而且注意他让你『删掉银行短信』——不是怕什么风控，是不想让你爸妈第一时间看到扣款通知。岳阳案例中骗子同样让小李清空短信、再拿爸爸的手机继续操作。" },
+          { text: "验证码绝对不给，还要删短信？直接举报他。", score: 20, kind: "good", feedback: "✅ 清醒。要求删除扣款短信，本身就证明他在做坏事。保存聊天记录，把账号举报，告诉父母，96110可以直接打。" },
+          { text: "先问问他为什么要删短信。", score: 10, kind: "ok", feedback: "⚠️ 不需要问。删短信的唯一目的是拖延你家长发现被骗的时间。这个问题本身就是答案，直接终止对话。" }
+        ]
+      },
+      {
+        bot: "【对方】唉，你太不配合了。最后一次机会：去便利店买2000元的电子充值卡，把卡密发我，这是『解冻保证金』，我收到就皮肤、退钱一起给你，不然我马上报警处理你。",
+        who: "对方",
+        options: [
+          { text: "买卡发卡密，赶紧了结这件事。", score: 0, kind: "bad", feedback: "❌ 北京案例中，频繁转账触发限制后，骗子正是让晨晨改买『电子商户充值卡』继续行骗——充值卡卡密和现金一样，一发出去就追不回来。" },
+          { text: "彻底识破：全程都是骗。保存证据，告诉家长，打96110举报。", score: 20, kind: "good", feedback: "✅ 满分通关。送皮肤（诱饵）→ 恐吓冻结账户（施压）→ 拿家长手机视频（控制）→ 验证码删短信（收割）→ 充值卡（最后一榨），这套连环剧本你全扛住了。" },
+          { text: "不理他了，删好友了事。", score: 10, kind: "ok", feedback: "⚠️ 止损了，但只做了一半。他还会去骗下一个同学，而且你的聊天记录就是证据。举报账号+告诉父母，才算真正了结。" }
+        ]
+      }
+    ]
+  },
+  {
+    id: "fcm",
+    icon: "🔓",
+    name: "解除防沉迷骗局",
+    desc: "『付费解锁防沉迷，内部渠道』——有人为此赔光压岁钱。",
+    tag: "话术取材：人民日报、澎湃新闻、法院公开判决",
+    loss: "同类案件个案最高损失 17.7 万元",
+    cases: [
+      { t: "5000 元压岁钱，毁于一次『解除防沉迷』咨询", d: "13 岁女孩晶晶刷短视频时看到有人说能解除未成年人游戏限制，微信转 30 元购买解锁服务；系统随即提示『账户异常，拒绝操作』，改发 QQ 红包；之后又被以购买『解封卡』『人脸授权码』等名目多次转账，5000 余元压岁钱全部打水漂。", s: "人民日报 · 警方提示" },
+      { t: "不满 12 岁被骗 17.7 万元，骗子获刑 3 年", d: "江苏盱眙县法院判决：被告人董某通过 QQ 以代练游戏、卡英雄皮肤、解除防沉迷需要资金验证为由，让不满 12 岁的被害人赵某通过微信二维码多次扫码转账，共骗取 177800 元，一审获刑 3 年。", s: "澎湃新闻 · 盱眙县法院判决" },
+      { t: "骗 10 余名未成年人的家长信息，涉案 30 余万", d: "山东滨州市中院判决：诈骗团伙以解除游戏防沉迷为由，骗取 10 余名未成年人的父母身份证号、银行卡号、短信验证码，再通过 QQ 视频出示家长付款码实施盗刷，形成『诈骗+盗刷』一条龙模式，涉案 30 余万元。", s: "澎湃新闻 · 滨州市中院判决" }
+    ],
+    steps: [
+      {
+        bot: "【短视频评论区】防沉迷限时太多？我们有内部渠道，付费即可解除未成年人游戏限制，周日天天都能玩。需要的私聊我，老客户正常使用中。",
+        who: "『技术大佬』",
+        allowInput: true,
+        inputHint: "输入你的回应，或选择选项",
+        options: [
+          { text: "正合我意，私聊问问价格。", score: 0, kind: "bad", feedback: "❌ 先记住一个事实：防沉迷系统是国家强制的后台机制，游戏企业统一部署，不存在任何付费解除的『内部渠道』——这是福建漳州公安民警的原话。凡是声称能解除防沉迷的，100%是诈骗（人民日报·警方提示）。", caseNote: "13 岁的晶晶就是刷短视频看到这条『广告』后联系上骗子的——从 30 元开始，一步步转走了 5000 余元压岁钱。" },
+          { text: "不信。国家强制的东西不可能私底下花钱解开，划走。", score: 20, kind: "good", feedback: "✅ 正确。这是国家层面的强制规定，没有任何『内部渠道』。想绕过它的人，正是骗子最喜欢的目标群体。" },
+          { text: "有点心动，先看看他的评论区和成交量。", score: 10, kind: "ok", feedback: "⚠️ 小心。骗子的『老客户反馈』全是伪造的聊天截图。而且要警惕：寻找绕过防沉迷的念头本身，就已经把你放进骗子的目标人群画像里了。" }
+        ]
+      },
+      {
+        bot: "【私聊】解锁服务费30元，扫这个码付，付完5分钟生效。……咦，系统提示你的账户异常，拒绝操作了。这样，你改发QQ红包到这个号，我人工帮你登记解锁。",
+        who: "『技术大佬』",
+        options: [
+          { text: "转。30元小事，别耽误我解锁。", score: 0, kind: "bad", feedback: "❌ 13岁的晶晶就是这样开始的：微信转30元买『解锁服务』，接着『账户异常』改发QQ红包——注意，『系统异常，换个方式付款』是所有骗子的通用台词，正规服务根本不存在这种情况。" },
+          { text: "不对劲：付了钱没生效，还换着花样要钱。停手，不转。", score: 20, kind: "good", feedback: "✅ 敏锐。付款后『出问题』再要第二笔，说明第一笔就是骗的。正规交易绝不会这样，及时停手你的损失就是0。" },
+          { text: "让他先保证能解锁，不然退钱。", score: 10, kind: "ok", feedback: "⚠️ 他在等你这句话——『保证能解锁』他当然会答应，骗子的话毫无成本。这不是谈判问题，是骗局本身，直接终止。" }
+        ]
+      },
+      {
+        bot: "【对方】红包我收到了，但你的账号等级太高，需要购买一张『解封卡』（88元）和『人脸授权码』（120元）配合激活，否则解锁会失败，之前付的也不退。",
+        who: "『技术大佬』",
+        options: [
+          { text: "继续买，都花30了不能白花。", score: 0, kind: "bad", feedback: "❌ 小心『沉没成本』陷阱：已经花出去的30元不该影响判断。晶晶就是这么一步步买『解封卡』『人脸授权码』，最后5000多元压岁钱全部打水漂。所谓的『解封卡』根本不存在。" },
+          { text: "识破了：解锁服务、解封卡、人脸授权码都是编出来的收费名目。止损退出。", score: 20, kind: "good", feedback: "✅ 看穿了本质。不断冒出来的新收费名目=骗局的确认信号。已经损失的30元就当学费，立刻退出并举报，你的反诈力满分。" },
+          { text: "只买88的解封卡，不再加钱。", score: 0, kind: "bad", feedback: "❌ 记住：不会有『最后一次』。每一笔付款之后都会有下一个名目在等你，直到你没钱或者家长发现。", caseNote: "晶晶的账单就是这样一页页加起来的：30 元解锁费 → QQ 红包 → 解封卡 → 人脸授权码，最终 5000 余元压岁钱全部打水漂。" }
+        ]
+      },
+      {
+        bot: "【对方】人脸授权码需要实名激活：把你父母的身份证号和银行卡号发我，我来代操作。放心，只是验证用，不会动卡里的钱。",
+        who: "『技术大佬』",
+        allowInput: true,
+        inputHint: "他开始要父母身份证和银行卡了，你输入你的回应",
+        options: [
+          { text: "发给他，反正只是验证。", score: 0, kind: "bad", feedback: "❌ 山东滨州法院判决的真实案例：骗子团伙骗取十余名未成年人的父母身份证号、银行卡号、短信验证码，再通过视频出示家长付款码盗刷——10多名孩子，损失30多万元。『只是验证』是谎言。" },
+          { text: "不给。父母身份证+银行卡=可以转走全部存款，绝不透露。", score: 20, kind: "good", feedback: "✅ 关键防线守住了。身份信息+银行卡+验证码，这三样凑齐就能掏空一张卡。任何索要这三样的人都按骗子处理，没有例外。" },
+          { text: "发个假的身份信息应付他。", score: 10, kind: "ok", feedback: "⚠️ 有创意但没必要。跟骗子斗智会让他纠缠更久，也可能不小心发错真信息。直接拉黑举报，才是干脆的收尾。" }
+        ]
+      },
+      {
+        bot: "【对方】最后说清楚：你不配合，我就把你充值解锁的记录发给你学校和老师，说你找人破解国家系统，看是你麻烦还是我麻烦。给你10分钟考虑。",
+        who: "『技术大佬』",
+        options: [
+          { text: "被他拿住把柄了，只好继续转钱消灾。", score: 0, kind: "bad", feedback: "❌ 别怕。你只是『想买东西』，主动权在你：告诉父母，全部坦白，骗子的话术就会失效。越隐瞒，骗子越能拿捏你——这是所有恐吓类骗局共同的心理杠杆。", caseNote: "被『把柄』拿捏后不停付钱的模式，在盱眙法院判决的案件中让一名不满 12 岁的孩子累计转出 17.7 万元。" },
+          { text: "不吃这套。截图证据，告诉父母并报警（110/96110）。", score: 20, kind: "good", feedback: "✅ 最优解。向父母坦白+报警，骗子拿你毫无办法。而你提供的证据还能帮助警方立案——江苏盱眙法院就判过骗未成年人17.7万元的案子，骗子被判刑3年。" },
+          { text: "拉黑删除，就当破财消灾，不告诉任何人。", score: 10, kind: "ok", feedback: "⚠️ 保密的处理方式风险很大：一来骗子可能换个号继续纠缠你；二来你不报警，他继续骗别的同学。告诉父母不丢人，被骗也不是你的错。" }
+        ]
+      }
+    ]
+  },
+  {
+    id: "star",
+    icon: "⭐",
+    name: "追星恐吓局",
+    desc: "中奖抽到『偶像私人QQ』，等来的却是律师函。",
+    tag: "话术取材：武汉、常州、莆田警方公布警情",
+    loss: "同类案件团伙涉案超 100 万元",
+    cases: [
+      { t: "专盯追星学生的 8 人团伙，20 余人被骗逾百万", d: "武汉洪山警方打掉一犯罪团伙：以粉丝抽奖送『明星私人QQ』引流，加上好友即收到伪造的立案决定书，声称『工作人员泄露艺人隐私、大量粉丝添加导致艺人权益受损、公司已报案』，诱导学生以上网课为由借来家长手机、锁上房门视频通话、摄像头对准手机屏幕配合『排查』并转账。全国串案 20 余起，涉案逾百万元。", s: "湖北长安网 · 武汉洪山警方" },
+      { t: "13 岁粉丝收『律师函』，视频里扫码转出 2 万余元", d: "常州溧阳 13 岁小明添加『明星QQ』后，对方发来报警回执和律师函，称有人恶意泄露明星隐私、既然添加了就要接受调查，否则警察上门抓捕。小明按要求添加『律师』并在视频通话中扫码、输入妈妈的支付密码，多次转账共 2 万余元。", s: "光明网 · 溧阳公安通报" },
+      { t: "粉丝群『执法人员』排查，妈妈手机转走 3 万", d: "莆田 14 岁中学生林某玩抖音时被人拉进『时代少年团抖音粉丝群』领明星小卡，群内突然出现『执法人员』声称『群主有问题，要求添加律师QQ排查』。林某恐惧之下与『律师』视频通话，用妈妈的手机转账 3 万元。", s: "腾讯新闻 · 福建警方暑期通报" }
+    ],
+    steps: [
+      {
+        bot: "【短视频抽奖】福利大放送！加入粉丝群参与抽奖：明星亲笔签名照、限量周边，终极大奖——偶像私人QQ号！全国仅限100名，今晚8点开奖！",
+        who: "『粉丝后援会』",
+        allowInput: true,
+        inputHint: "输入你会怎么做",
+        options: [
+          { text: "我是真爱粉，必须冲，进群抽奖！", score: 0, kind: "bad", feedback: "❌ 冷静一点：明星从不通过短视频抽奖送『私人QQ』，他的私人联系方式更不可能被拿来抽奖。武汉警方打掉的团伙专盯学生追星族，全国20余人被骗逾百万元——目标人群画像就是『热情的粉丝』。" },
+          { text: "官方渠道从没有这种活动，假的，不进。", score: 20, kind: "good", feedback: "✅ 判断标准抓得很准：一切绕开官方渠道的『明星福利』都是假的。明星的公益活动只会通过工作室官方账号发布。" },
+          { text: "先进群看看，群里的东西又不花钱。", score: 10, kind: "ok", feedback: "⚠️ 『不花钱』是错觉。进群之后你会被标记为『上钩用户』，接下来的剧本——中奖通知、律师函、恐吓——全是冲着你来的。免费的才是最贵的。" }
+        ]
+      },
+      {
+        bot: "【私信】恭喜你抽中终极大奖：偶像私人QQ号！这是他的联系方式，添加后有机会直接对话。祝你好运～（发送号码）",
+        who: "『后援会管理员』",
+        options: [
+          { text: "加上！这可能是我离偶像最近的一次。", score: 0, kind: "bad", feedback: "❌ 这个『私人QQ』背后不是偶像，是等着你的骗子。武汉的小李加上之后，等来的不是偶像问候，而是一封『立案决定书』。记住：真正的偶像不可能抽奖送QQ，这个号码100%是假的。" },
+          { text: "不加。真偶像的QQ不可能被当成奖品随便发。", score: 20, kind: "good", feedback: "✅ 想通了。把『偶像私号』当奖品的营销，本身就是不可能成立的事——这一步不走，后面所有剧本都和你无关。" },
+          { text: "先加着，观察对方是不是真的。", score: 10, kind: "ok", feedback: "⚠️ 不建议。对方下一秒就会发来伪造的法律文书，很多同学是在恐慌中『配合调查』的。你不需要亲自验证一个逻辑上已经穿帮的东西。" }
+        ]
+      },
+      {
+        bot: "【所谓明星QQ发来文件】立案决定书：因工作人员泄露艺人隐私，大量粉丝违规添加，艺人权益受损，公司已报案。你作为添加者，涉嫌侵犯艺人隐私，请添加侦查员QQ：7712****88 配合调查，否则将上门抓捕并通知你的监护人。",
+        who: "假冒明星账号",
+        allowInput: true,
+        inputHint: "突然收到『立案决定书』，输入你的反应",
+        options: [
+          { text: "慌了，我加个QQ怎么就犯法了？赶紧加侦查员QQ自证清白。", score: 0, kind: "bad", feedback: "❌ 你先问了自己『我怎么犯法了』，却没问『这文件是真的吗』。常州13岁的小明就是这样：加上『律师』后视频通话，被出示二维码转账『洗清嫌疑』，前后转出2万余元。伪造法律文书是这伙骗子的标配道具。" },
+          { text: "法律文书不可能通过QQ私信送达，而且‘加好友=犯罪’逻辑荒谬。这是骗局，不配合。", score: 20, kind: "good", feedback: "✅ 法律常识在线：公安机关的立案、送达都有法定程序，绝不会通过QQ发图片让你加『侦查员』。『添加好友就涉嫌侵权』在法律上根本不成立。" },
+          { text: "截图发到粉丝群里问问其他粉丝。", score: 10, kind: "ok", feedback: "⚠️ 求证意识不错，但群里的『管理员』『热心粉丝』很可能都是骗子的小号，他们会合起伙来吓你。更可靠的是问父母或老师，或者直接打96110咨询。" }
+        ]
+      },
+      {
+        bot: "【侦查员QQ语音】现在开始安全排查。第一，不要挂断，不要告诉任何人，包括你父母。第二，找个单独的房间——就说你上网课，把你妈妈的手机拿来，视频连着，摄像头对准手机屏幕，我核实完就给你出具《不予追究决定书》。",
+        who: "假『侦查员』",
+        options: [
+          { text: "按他说的做，早点结束这件事。", score: 0, kind: "bad", feedback: "❌ 武汉警方披露的作案细节和你听到的分毫不差：受害人『以上网课为由借来家长的手机，锁上房门跟对方视频通话，将摄像头对着家长的手机屏幕，按照指令操作』——接下来就是一笔笔转账。『不许挂断、不许告诉家人』是骗子隔离你的手段。" },
+          { text: "三个红灯一起亮了：不让挂断、不让告诉家人、要家长手机。挂断，告诉父母。", score: 20, kind: "good", feedback: "✅ 满分。真实的执法调查：可以挂断电话核实、可以咨询律师、可以告诉家人——恰恰相反，骗子才需要把你隔离起来。这三条红线一条都不能碰。" },
+          { text: "假意答应，然后马上用自己手机给妈妈发消息求助。", score: 15, kind: "good", feedback: "✅ 机智！表面稳住骗子、背后马上向家长求救，处理得很好。记住不用冒险周旋太久，找机会直接挂断更安全。" }
+        ]
+      },
+      {
+        bot: "【对方】排查发现你账户流水异常，需要转账2000元到『安全审查账户』刷流水自证清白，核实后全额退还。不配合的话，明天我们就联系你的学校。",
+        who: "假『侦查员』",
+        options: [
+          { text: "转2000自证清白，他会退的。", score: 0, kind: "bad", feedback: "❌ 没有『安全审查账户』，没有『刷流水』，更没有退款。莆田14岁学生林某就是在类似剧本里用妈妈的手机转出3万元。所有让你转账『自证清白』的，都是骗子。" },
+          { text: "全盘识破：这是冒充执法者的诈骗。保存所有记录，打110/96110举报。", score: 20, kind: "good", feedback: "✅ 完整通关。抽奖引流→假明星号→伪造立案文书→假侦查员恐吓→隔离+转账，这套专骗追星学生的剧本你全程没跳进任何一个坑。武汉警方正是靠受害人提供的证据打掉了这个8人团伙。" },
+          { text: "跟他说：我已经截图报警了，再见。", score: 15, kind: "good", feedback: "✅ 有底气！不过别跟骗子互相放话，挂断即可。然后真的去做那两件事：保存记录、报警举报——这才是收尾的正确姿势。" }
+        ]
+      }
+    ]
+  },
+  {
+    id: "shua",
+    icon: "💰",
+    name: "刷单返利兼职局",
+    desc: "『动动手指日入300，学生党可做』——先让你尝甜头。",
+    tag: "话术取材：黄石、惠州、深圳警方披露警情",
+    loss: "同类案件个案最高损失 19 万元",
+    cases: [
+      { t: "上网课时掉进返利群，累计被骗 19 万", d: "惠州 14 岁初二学生橙橙在家上网课时，收到『某网红生日福利群』的QQ群消息：『小金额大回报，扫码简单操作即可，名额有限』。她按指引用爸妈手机扫码刷单，第一笔本金和佣金果然到账；随后『二维码异常』『审核需要费用』『虚拟订单』接连出现，要求不断扫新码转账，累计被骗 19 万元。", s: "央广网 · 惠阳区检察院通报" },
+      { t: "三单刷完 2186 元，对方失联", d: "黄石 16 岁职校女生小李在QQ群看到刷单兼职：第一单 121.5 元、第二单 850 元、第三单 1215 元，对方称『至少刷满三单，本金和佣金一起付』。三单刷完她要求退还 2186.5 元本金时，对方消息不回、电话不接。", s: "央广网 · 黄石警方" },
+      { t: "点赞任务两天赚 18 元，反诈中心来电劝阻", d: "深圳 15 岁中学生丘某被陌生人加QQ后拉进刷单返利群，完成两单抖音点赞任务获利 18.5 元，正准备继续时被大鹏公安反诈中心预警劝阻——再晚一步，就会进入大额垫资的『联单』环节。", s: "人民日报 · 深圳大鹏警方" }
+    ],
+    steps: [
+      {
+        bot: "【QQ群消息】急招线上兼职：给抖音点赞+关注就行，一单佣金8-15元，日结！学生党、宝妈都可做，不耽误学习，扫码进任务群，名额有限！",
+        who: "『兼职导师』",
+        allowInput: true,
+        inputHint: "输入你的想法",
+        options: [
+          { text: "点赞就能赚钱？试试呗，反正没成本。", score: 0, kind: "bad", feedback: "❌ 『没成本』正是设计好的入口。深圳15岁中学生丘某就是这样被拉进群完成抖音点赞任务——这只是筛选目标的第一步，等你尝到甜头，大额的『进阶任务』就来了。" },
+          { text: "刷单本身就是违法行为，而且学生兼职广告基本是诈骗。不碰。", score: 20, kind: "good", feedback: "✅ 认知满分。《反电信网络诈骗法》明确禁止刷单类灰产，商家也不会花钱雇学生点赞——逻辑上就不成立。群里每个『已赚多少』的截图都是伪造的。" },
+          { text: "先观察几天，看看群里有没有人真的收到佣金。", score: 10, kind: "ok", feedback: "⚠️ 他们会演给你看：群里的『晒单』『感谢导师』全是托儿发的。惠州警方描述过完整剧本：先小额返利骗信任，再以『联单』『系统故障』收割。" }
+        ]
+      },
+      {
+        bot: "【导师】欢迎新人！第一个任务：关注这个抖音号，截图发我。……做得好！8.5元佣金已到账。再完成一单9.5元马上结。赚钱就是这么简单~",
+        who: "『兼职导师』",
+        options: [
+          { text: "真的到账了！这不是骗子，继续做！", score: 0, kind: "bad", feedback: "❌ 这8.5元是鱼饵。骗子最清楚：让你『亲眼看到』小额到账，比你听一百句劝都管用。惠州14岁学生橙橙也是在收到第一笔本金+佣金后『更加信任对方』，最终累计被骗19万元。" },
+          { text: "反常：给钱太痛快了。小额返利是骗子的标准动作，到此为止。", score: 20, kind: "good", feedback: "✅ 你比多数成年人清醒。『先给甜头再收网』是刷单骗局的第一定律，尝到甜头的那一刻恰恰是最危险的时刻。退出并举报这个群。" },
+          { text: "再做两单试试，攒到50块就收手。", score: 0, kind: "bad", feedback: "❌ 没有人能『见好就收』——下一步他们会用『联单任务』『高佣金专区』把你往大额垫资里引。你设定的止损线，他们有的是办法让你突破。", caseNote: "『再做两单』的下一个版本，就是黄石 16 岁女孩刷的那三单：121.5 → 850 → 1215 元，2186.5 元本金再也没能退回。" }
+        ]
+      },
+      {
+        bot: "【导师】恭喜你升级到高级任务区！现在做『联单』：连续完成3单，本金+30%佣金一次性返还。第一单121元，第二单850元，第三单1215元。做完别急着催，三单齐了统一结算。",
+        who: "『兼职导师』",
+        options: [
+          { text: "本金都会返还有30%佣金，拼了。", score: 0, kind: "bad", feedback: "❌ 黄石16岁女孩小李的真实账单：刷单121.5元→850元→1215元，对方以『至少刷满三单』为由拖延，2186.5元本金要退时，对方消息不回、电话不接。你垫的钱，从来没有『统一结算』那一天。" },
+          { text: "识破：『刷满三单才返』『联单不退』都是拖你垫资的话术。拒绝并退出。", score: 20, kind: "good", feedback: "✅ 正规兼职预支佣金、按单结算，绝不会让你先垫上千元。凡是让你掏本金的任务，性质已经从『兼职』变成『诈骗』了。" },
+          { text: "只做第一单121的，试试水。", score: 0, kind: "bad", feedback: "❌ 121元也会打水漂，而且你完成第一单后，对方就有话术让你『不做完三单前两单也不退』。赌桌上没有小额试水这种事。" }
+        ]
+      },
+      {
+        bot: "【导师】系统显示你的联单任务超时，账户被冻结！需要再充值2186元『激活账户』，否则前面的钱都取不出来。激活后连本带佣一起退你，这是最后一步了！",
+        who: "『兼职导师』",
+        allowInput: true,
+        inputHint: "他说你的账户被冻结了，输入你的回应",
+        options: [
+          { text: "前面的钱都在里面，只好激活了。", score: 0, kind: "bad", feedback: "❌ 『账户冻结，交钱激活』是刷单骗局的收割终点。惠州的橙橙被『二维码异常、审核费用、虚拟订单』这类理由连续加码，累计被骗19万。记住：你账户里从来没有『钱』，只有你转出去的钱。" },
+          { text: "不转。钱已经被骗了，保存全部聊天记录和转账记录，报警。", score: 20, kind: "good", feedback: "✅ 及时止损+正确维权。报警时提供QQ号、收款账号和转账记录，警方有机会冻结涉案账户止付。越快越好，96110全国反诈专线随时能打。" },
+          { text: "让家长处理，自己先退群拉黑。", score: 15, kind: "good", feedback: "✅ 找家长是对的。提醒一下：记得保留聊天记录和转账凭证给家长/警方，别一怒之下全删了——证据在，追回才有可能。" }
+        ]
+      },
+      {
+        bot: "【导师】同学，我看你挺聪明的。这样，你不用做任务了，把你的QQ号租给我们『做推广』，一天70元，纯躺赚，什么都不用管。",
+        who: "『兼职导师』",
+        options: [
+          { text: "这个稳，账号租出去就能躺赚。", score: 0, kind: "bad", feedback: "❌ 深圳反诈中心的原话：出租微信/QQ账号极可能被用于违法犯罪，受害者会在不知情中被牵连进网络灰产，还可能承担法律责任。『什么都不用管』的钱，都是拿你的前途换的。" },
+          { text: "不租。账号实名在我名下，出了事就是我的责任。拒绝并举报。", score: 20, kind: "good", feedback: "✅ 法律意识很强。把实名账号租借给他人实施诈骗、洗钱，租借者同样可能涉嫌帮助信息网络犯罪活动罪（帮信罪）。天上掉的从来不是馅饼。" },
+          { text: "先问清楚他们拿账号干什么。", score: 10, kind: "ok", feedback: "⚠️ 他会告诉你『只是发发广告』。没有任何合法用途需要租别人的实名账号。不用问了，答案只有一个。" }
+        ]
+      }
+    ]
+  },
+  {
+    id: "trade",
+    icon: "🛒",
+    name: "账号交易担保局",
+    desc: "低价账号、假担保平台、『卡单解冻』——交易骗局的连环套。",
+    tag: "话术取材：多地警方披露的游戏交易类警情",
+    loss: "同类案件常造成数千至数万元损失",
+    cases: [
+      { t: "投票返现 88.8 元，换来 12600 元扣款", d: "湖北 14 岁朱某被朋友拉进返利QQ群，扫二维码『输入代码88.8』后手机直接被扣款、无返现通道；对方随即加好友称『未成年人转账导致公司账户被冻结，必须按要求操作解除冻结，否则将通过法院传唤父母』，并要求操作时不得让父母发现。朱某按对方要求出示父母付款码，被扣款 12600 元。", s: "腾讯新闻 · 警方通报汇编" },
+      { t: "扫码领皮肤触发『解冻费』，3000 元被转走", d: "甘肃某学生在社交平台看到『加QQ免费送皮肤』广告，扫码填写信息后界面显示『账户被冻结』；骗子随即以解除冻结为由，诱导他用母亲手机微信支付『解冻费』并承诺资金退回，银行账户被转走 3000 元。", s: "甘肃省公安厅反诈中心" },
+      { t: "出租账号『日赚 70 元』，同学被骗 2000 元", d: "深圳大鹏警方处置的刷单案件中，多名学生曾以一天 70 元的价格短期出租微信账号，账号随后被用于违法活动、重新登录即被限制使用；其中一名同学被同一团伙的骗局骗走 2000 元。警方提醒：出租实名账号可能被牵连进网络灰产。", s: "人民日报 · 深圳大鹏警方通报" }
+    ],
+    steps: [
+      {
+        bot: "【交易群】出一批 Valle 全皮肤号，官方价1200，我这只要400，急用钱才出的，先到先得！不走官方，走我们自己的『担保交易平台』，双方都放心。",
+        who: "『卖家』",
+        allowInput: true,
+        inputHint: "400元的全皮肤号，你会怎么做？",
+        options: [
+          { text: "400太香了，加上聊聊，走他说的担保平台。", score: 0, kind: "bad", feedback: "❌ 先算笔账：官方价1200的东西400出手，卖家自己挂官方渠道卖1200不好吗？『急用钱』『内部渠道』都是压价借口。而那个『担保交易平台』，是骗子自建的钓鱼网站。", caseNote: "甘肃某学生扫『领皮肤』二维码后，同样被『账户被冻结』话术引导，用母亲手机支付了 3000 元『解冻费』——钱没有退回。" },
+          { text: "不买。远低于市场价的账号，多半是盗号或诈骗。要买走官方交易渠道。", score: 20, kind: "good", feedback: "✅ 价格直觉在线。低价号要么是骗局，要么是盗来的黑号（买了也保不住，还可能摊上事）。游戏交易只走官方寄售/官方中介，私下链接一律不点。" },
+          { text: "问问他为什么这么便宜，再决定。", score: 10, kind: "ok", feedback: "⚠️ 他会告诉你『女朋友的号，分手了』『工作室冲量』——每个理由都编得圆。价格异常本身就够了，不需要听故事。" }
+        ]
+      },
+      {
+        bot: "【对方】链接发你了：zz-mall****.com，注册后搜『Valle全皮肤』拍下，钱先打到平台托管，你收到号确认后平台才放款给我。这样你零风险。",
+        who: "『卖家』",
+        options: [
+          { text: "有担保平台托管，那确实安全，拍下付款。", score: 0, kind: "bad", feedback: "❌ 真正的担保平台是游戏官方交易系统或正规大平台，不会是对方私发的一个陌生网址。这种『平台』的界面做得像模像样，但你的钱进去直接进他口袋，客服也是他一个人。", caseNote: "湖北 14 岁的朱某在『返利平台』扫码 88.8 元后被『账户冻结』恐吓，按要求出示父母付款码，被扣款 12600 元。" },
+          { text: "不点陌生网址。担保要走官方渠道，他说了不算。", score: 20, kind: "good", feedback: "✅ 一针见血：担保方由卖家指定，担保就形同虚设。正确做法是在游戏官方交易系统里查这个号是否存在、价格是多少。" },
+          { text: "把链接发给我爸，让他帮忙看看是不是真网站。", score: 15, kind: "good", feedback: "✅ 交给大人把关，靠谱。顺便说结论：这类『平台』连ICP备案都没有，查一眼就知道是钓鱼站。" }
+        ]
+      },
+      {
+        bot: "【平台客服】您好，您的订单出现「卡单」：由于您是未成年人付款，订单被系统风控冻结，需充值与订单等额的400元作为『解冻金』激活，激活后解冻金和本金一并退还到您账户。",
+        who: "『平台客服』",
+        allowInput: true,
+        inputHint: "『卡单』『解冻金』来了，输入你的回应",
+        options: [
+          { text: "解冻金会退的，转400激活。", score: 0, kind: "bad", feedback: "❌ 『卡单』这个词只存在于诈骗剧本里——正规支付系统没有『卡单』需要用户再充一笔钱解冻的机制。付了400，马上会告诉你『风控升级』，让你再付更多。免费皮肤局的『账户冻结6万』、刷单局的『账户冻结要激活』，是同一句台词。" },
+          { text: "三句话识破：陌生平台+卡单+再交钱=诈骗。停止付款，退出。", score: 20, kind: "good", feedback: "✅ 你已经总结出了通用公式。『卡单、解冻、激活、风控』这些词一出现，无论披着买号、领皮肤还是兼职的皮，本质都是同一类诈骗。" },
+          { text: "让他提供解冻金会退还的书面凭证。", score: 10, kind: "ok", feedback: "⚠️ 他会发来一张伪造的『平台承诺书』，有公章有签名，做得比你想象的真实。和骗子对证据没有意义，退出才是唯一正确选项。" }
+        ]
+      },
+      {
+        bot: "【对方】解冻金到账了，但你的账户是『非实名等级』，需再充600元升级『黄金会员』才能提现，提现时全退。这是平台规定，我也没有办法……",
+        who: "『平台客服』",
+        options: [
+          { text: "都投了800了，不提现就全亏了，再转600。", score: 0, kind: "bad", feedback: "❌ 你已经被『沉没成本』套牢了：越是舍不得前面的800，越会往里填。骗子就是这么让你『为了不亏而亏更多』的。停手，认损800，好过损失8000。" },
+          { text: "识破循环：每付一笔就有新名目。立即停止，保存证据报警。", score: 20, kind: "good", feedback: "✅ 看到了循环的本质。会员费、流水不足、实名等级……名目可以无限编下去，唯一能终结它的方式是你转身离开。截图+报警，96110。" },
+          { text: "跟客服说再要钱就报警，看他反应。", score: 10, kind: "ok", feedback: "⚠️ 不用试探，答案已经确定。而且激怒骗子后他可能换号反复骚扰你。默默保存证据、举报、告诉家长，才是完整操作。" }
+        ]
+      },
+      {
+        bot: "【对方】最后帮你一次：你去找你爸妈，就说学校要交费，让他们扫码把这1200元『服务费』付了，提现成功我多送你一个皮肤。同学，机会只有这一次。",
+        who: "『平台客服』",
+        options: [
+          { text: "骗爸妈说学校收费……只能这么办了。", score: 0, kind: "bad", feedback: "❌ 停。现在你要做的不是『填补窟窿』，而是把整件事告诉父母。欺骗父母去填骗子的口袋，只会让损失翻倍、让自己更深地陷进去。被骗不丢人，不敢说才会越陷越深。" },
+          { text: "坦白告诉父母全部经过，一起报警处理。", score: 20, kind: "good", feedback: "✅ 这是最难也最对的一步。未成年人被骗的案例里，几乎每个孩子都纠结过『怎么跟爸妈说』——但所有案子都是家长知道后第一时间报警、止付、追损的。信任父母，就是你最大的反诈底气。" },
+          { text: "不转了，也先不告诉家长，观察几天再说。", score: 10, kind: "ok", feedback: "⚠️ 止损是对的，但『先不说』的每一天，骗子都可能换号来纠缠你，你的账号信息也还在他手里。尽早告诉父母，处理干净。" }
+        ]
+      }
+    ]
+  }
+];
+
+/* ================= 游戏状态 ================= */
+let current = null;
+let stepIndex = 0;
+let score = 100;
+let reviews = [];
+let busy = false;
+let lastKind = null;   // 上一回合选择类型
+let badStreak = 0;     // 连续危险行为次数
+let goodStreak = 0;    // 连续安全操作次数
+
+const chatArea = document.getElementById("chat-area");
+const choicesArea = document.getElementById("choices-area");
+
+/* ================= 首页渲染 ================= */
+function renderHome() {
+  const grid = document.getElementById("scenario-grid");
+  grid.innerHTML = SCENARIOS.map(function (s, i) {
+    return '<div class="card" onclick="startScenario(' + i + ')">' +
+      '<div class="go">→</div>' +
+      '<div class="top"><span class="icon">' + s.icon + '</span><h3>' + s.name + '</h3></div>' +
+      '<p>' + s.desc + '</p>' +
+      '<div class="meta"><span>' + s.loss + '</span><br>' + s.tag + '</div>' +
+      '</div>';
+  }).join("");
+}
+
+/* ================= 切屏 ================= */
+function show(id) {
+  ["home-screen", "chat-screen", "report-screen"].forEach(function (x) {
+    document.getElementById(x).style.display = (x === id) ? "block" : "none";
+  });
+  window.scrollTo(0, 0);
+}
+
+function startScenario(i) {
+  current = SCENARIOS[i];
+  stepIndex = 0;
+  score = 100;
+  reviews = [];
+  lastKind = null;
+  badStreak = 0;
+  goodStreak = 0;
+  document.getElementById("chat-avatar").textContent = current.icon;
+  document.getElementById("chat-name").textContent = current.name;
+  document.getElementById("chat-sub").textContent = "回合 1 / " + current.steps.length;
+  document.getElementById("progress-bar").style.width = "0%";
+  document.getElementById("score-num").textContent = score;
+  chatArea.innerHTML = "";
+  choicesArea.innerHTML = "";
+  show("chat-screen");
+  playStep();
+}
+
+function goHome() {
+  show("home-screen");
+  renderHome();
+}
+
+/* ================= 聊天引擎 ================= */
+function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+
+function addMsg(html, cls, avatar) {
+  const div = document.createElement("div");
+  div.className = "msg " + (cls || "");
+  div.innerHTML = (avatar ? '<div class="mini-avatar">' + avatar + '</div>' : "") +
+    '<div class="bubble">' + html + '</div>';
+  chatArea.appendChild(div);
+  chatArea.scrollTop = chatArea.scrollHeight;
+  return div;
+}
+
+function escapeHtml(s) {
+  return s.replace(/[&<>"']/g, function (c) {
+    return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+  });
+}
+
+async function botSay(text, who) {
+  busy = true;
+  const t = addMsg('<span class="typing"><i></i><i></i><i></i></span>', "", "💬");
+  await sleep(650 + Math.min(text.length * 10, 850));
+  t.remove();
+  addMsg('<span class="who">' + who + '</span>' + escapeHtml(text), "", "🗣️");
+  busy = false;
+}
+
+function addLesson(text) {
+  addMsg('<span class="who">🛡️ 警方提示</span>' + escapeHtml(text), "lesson", "🛡️");
+}
+
+function addCase(text) {
+  addMsg('<span class="who">📂 真实案例</span>' + escapeHtml(text), "case", "📂");
+}
+
+function updateScore(delta) {
+  score = Math.max(0, Math.min(100, score + delta));
+  document.getElementById("score-num").textContent = score;
+}
+
+async function playStep() {
+  const step = current.steps[stepIndex];
+  document.getElementById("progress-bar").style.width =
+    ((stepIndex) / current.steps.length * 100) + "%";
+  document.getElementById("chat-sub").textContent =
+    "回合 " + (stepIndex + 1) + " / " + current.steps.length;
+  choicesArea.innerHTML = "";
+  await botSay(step.bot, step.who || "对方");
+  renderChoices(step);
+}
+
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    const t = arr[i]; arr[i] = arr[j]; arr[j] = t;
+  }
+  return arr;
+}
+
+function renderChoices(step) {
+  choicesArea.innerHTML = "";
+  const box = document.createElement("div");
+  box.className = "choices";
+  shuffle(step.options).forEach(function (opt, i) {
+    const btn = document.createElement("button");
+    btn.className = "choice";
+    btn.textContent = "【" + "ABCDE"[i] + "】" + opt.text;
+    btn.onclick = function () { pickOption(opt, btn); };
+    box.appendChild(btn);
+  });
+  choicesArea.appendChild(box);
+
+  const row = document.createElement("div");
+  row.className = "input-row";
+  row.innerHTML = '<input id="free-input" maxlength="80" placeholder="✎ 输入你的应对，AI 会分析你的反应">' +
+    '<button onclick="submitInput()">发送</button>';
+  const inp = row.querySelector("#free-input");
+  inp.addEventListener("keydown", function (e) { if (e.key === "Enter") submitInput(); });
+  choicesArea.appendChild(row);
+  const hint = document.createElement("div");
+  hint.className = "hint-text";
+  hint.textContent = step.inputHint || "也可以不选选项，直接输入你会怎么做，AI 会分析你的反诈意识";
+  choicesArea.appendChild(hint);
+}
+
+function lockChoices(pickedBtn) {
+  choicesArea.querySelectorAll(".choice").forEach(function (b) {
+    b.disabled = true;
+    if (b === pickedBtn) b.classList.add("picked");
+  });
+  const inp = document.getElementById("free-input");
+  if (inp) inp.disabled = true;
+  const sendBtn = choicesArea.querySelector(".input-row button");
+  if (sendBtn) sendBtn.disabled = true;
+}
+
+async function applyChoice(opt, label) {
+  updateScore(opt.score - 20);
+  const marks = { good: "✅ 安全操作", ok: "⚠️ 有风险", bad: "❌ 危险行为" };
+  reviews.push({ label: label, mark: marks[opt.kind], feedback: opt.feedback });
+
+  await botSay(opt.feedback, "AI 反诈分析师");
+  addLesson(lessonFor(opt.kind));
+  if (opt.caseNote) {
+    await sleep(250);
+    addCase(opt.caseNote);
+  }
+  // 反应链：根据此前决策路径追加不同的动态反应
+  const chain = chainReactions(opt.kind);
+  for (let i = 0; i < chain.length; i++) {
+    await sleep(380);
+    addReact(chain[i]);
+  }
+  await sleep(400);
+  nextStep();
+}
+
+/* ================= 反应链引擎 ================= */
+function pick(arr) {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+
+function addReact(text) {
+  addMsg('<span class="who">🤖 反诈助手</span>' + escapeHtml(text), "react", "🤖");
+}
+
+const REACT_POOLS = {
+  good: [
+    "📌 注意你的分析路径：你不是靠运气躲过的，是找到了话术里不合逻辑的那一环。下次骗子换皮，逻辑漏洞还在。",
+    "🧠 这类骗局的关键道具你已经见过一遍了——以后看到同款，你的大脑会自动报警。",
+    "🎯 实战中判断速度很关键：你挂断得越快，骗子在你身上花的时间就越不值，他就会换下一个目标。",
+    "🔒 这一步守住了，后面的连环剧本就断了一环。骗子最怕的不是聪明人，是链条断裂。",
+    "👏 说句实话：同龄人里有不少人在这一步没扛住。你和他们的差距，就是这几秒钟的判断。"
+  ],
+  streakGood: [
+    "🔥 连续拆招：从开局到现在你没有一次失手，这已经接近反诈训练的满分表现。",
+    "📈 照这个节奏，骗子此刻应该已经在换目标了——对你这种反应，他的话术成本不划算。",
+    "🏆 三连胜。保持这个状态，这份鉴定报告会很好看。"
+  ],
+  recovery: [
+    "🔄 及时回头：上一回合的犹豫没有延续到这里。实战里，意识到危险后立刻改动作，才是真本事。",
+    "🛠️ 状态回升。记住这次切换的感觉——发现自己偏向危险后马上纠正，而不是嘴上改、手上没改。",
+    "↩️ 好样的，没有被上一回合的被动带走。危险的对话里，主动权随时可以拿回来。"
+  ],
+  relapse: [
+    "📉 前面守住的钱，差点在这一步送出去。骗子最喜欢在你放松警惕的时候加码。",
+    "↯ 你刚刚亲身验证了『知道』和『做到』之间的距离——真实案件里，这个距离就是损失金额。",
+    "⚠️ 前几回合建立的防线，一步就丢了。骗子的剧本就是为这种松懈设计的。"
+  ],
+  bad1: [
+    "🕸️ 对方已经把你标记为『可以继续谈』的对象，下一轮话术会更有针对性、更懂你的软肋。",
+    "🧩 拆一下这步的结构：他先制造恐惧或诱惑，然后只给你留一条『能解决』的路——这条路的尽头是他的收款码。",
+    "⏱️ 你的犹豫在他那里是进度条。此刻他的剧本已经推进到下一幕了。",
+    "🕳️ 这一步和真实案件的作案过程对上了。接下来他要做的事，你可以提前猜到。"
+  ],
+  bad2: [
+    "🚨 连续两步踩进剧本。真实案件里，走到这里的受害人已经开始瞒着家长、独自转账了——你正走在同一条路上。",
+    "📉 连踩两坑后，骗子的胃口会变大：他不再要几十几百，下一步就是让你『拿家长手机来』。",
+    "🧨 危险信号：你现在对他有『求』的心理了。一旦开始求骗子，就再也谈不赢。"
+  ],
+  bad3: [
+    "☠️ 剧本进入收割阶段。真实案件里走到这一步的孩子，损失都以万计——但你现在喊停，损失仍然定格在 0。",
+    "🆘 现在停还来得及：挂断、截图、告诉父母、打 96110。这四个动作，任何时候做都不算晚。",
+    "🛑 你已经连续把主动权交出去了。停一下，回想第一回合的你是怎么判断的——那个人还在。"
+  ],
+  afterBad: [
+    "🤏 你在悬崖边停了半步。半步不够——直接掉头才安全。",
+    "🪢 踩过坑之后的犹豫，比平时的犹豫更危险：骗子会趁你心虚加压。"
+  ],
+  ok: [
+    "🤔 你识别了一半：意识到了不对劲，但还留着『再看看』的口子——骗子要的就是这个口子。",
+    "🌀 半信半疑是最危险的状态：既不彻底相信，也不彻底拒绝，容易被一步步拖进剧本。",
+    "🧷 提示：面对可疑对象，正确的操作只有三种——挂断、拉黑、举报。没有『观望』这个选项。",
+    "🌫️ 你的判断在云里。记住：只要来源可疑，动机默认有罪，直到你向官方渠道核实为止。"
+  ],
+  finalGood: [
+    "🏁 你完整跑完了一整套骗局剧本并且全身而退——这正是这个场景想让你带走的能力。",
+    "🎬 剧本演完了，主演是骗子，但导演权一直在你手里。"
+  ]
+};
+
+function chainReactions(kind) {
+  const out = [];
+  const isLast = stepIndex === current.steps.length - 1;
+
+  if (kind === "bad") {
+    const streak = badStreak + 1;
+    if (lastKind === "good") out.push(pick(REACT_POOLS.relapse));
+    if (streak >= 3) out.push(pick(REACT_POOLS.bad3));
+    else if (streak === 2) out.push(pick(REACT_POOLS.bad2));
+    else out.push(pick(REACT_POOLS.bad1));
+    badStreak = streak;
+    goodStreak = 0;
+  } else if (kind === "ok") {
+    if (Math.random() < 0.6) out.push(pick(REACT_POOLS.ok));
+    if (badStreak >= 2) out.push(pick(REACT_POOLS.afterBad));
+    badStreak = 0;
+    goodStreak = 0;
+  } else {
+    if (lastKind === "bad" || lastKind === "ok") out.push(pick(REACT_POOLS.recovery));
+    else if (goodStreak + 1 >= 3 && Math.random() < 0.65) out.push(pick(REACT_POOLS.streakGood));
+    else if (Math.random() < 0.5) out.push(pick(REACT_POOLS.good));
+    if (isLast) out.push(pick(REACT_POOLS.finalGood));
+    goodStreak++;
+    badStreak = 0;
+  }
+  lastKind = kind;
+  return out;
+}
+
+function lessonFor(kind) {
+  const pools = {
+    good: [
+      "警方提示：真警察办案不会让你保密，不会视频办案，更不会让你转账『自证清白』。",
+      "警方提示：凡是『先交钱才能拿回钱 / 解除限制』的，一律是诈骗。",
+      "警方提示：拿不准就打 96110，接通之后，一切话术都会失效。"
+    ],
+    ok: [
+      "警方提示：面对可疑信息，『挂断 + 告诉家长』永远优先于『再观察一下』。",
+      "警方提示：半信半疑的时候，最该做的是求证，而不是保持联系。",
+      "警方提示：可疑的东西宁可信其无——损失的是机会，不是钱。"
+    ],
+    bad: [
+      "警方提示：记住 96110。真被骗了，越早报警，止付追回的概率越大。",
+      "警方提示：无论损失多少，第一时间告诉家长——隐瞒只会让骗子多骗一轮。",
+      "警方提示：给出去的钱和验证码都追不回来，但下一秒的你能止损。"
+    ]
+  };
+  return pick(pools[kind]);
+}
+
+async function nextStep() {
+  stepIndex++;
+  if (stepIndex < current.steps.length) {
+    await sleep(300);
+    playStep();
+  } else {
+    document.getElementById("progress-bar").style.width = "100%";
+    setTimeout(showReport, 500);
+  }
+}
+
+/* ================= 选择 / 自由输入 ================= */
+async function pickOption(opt, btn) {
+  if (busy) return;
+  lockChoices(btn);
+  addMsg(escapeHtml(opt.text), "user", "🙂");
+  await applyChoice(opt, opt.text);
+}
+
+async function submitInput() {
+  if (busy) return;
+  const inp = document.getElementById("free-input");
+  const text = (inp.value || "").trim();
+  if (!text) return;
+  lockChoices(inp);
+  addMsg(escapeHtml(text), "user", "🙂");
+
+  const step = current.steps[stepIndex];
+  const opt = analyzeInput(text, step.options);
+  await applyChoice(opt, "自由输入：「" + text.slice(0, 24) + (text.length > 24 ? "…" : "") + "」");
+}
+
+/* 自由输入关键词分析 */
+const DANGER_WORDS = ["转账","汇款","打钱","给钱","付钱","付款","扫码","扫一扫","充值","验证码","密码","银行卡","身份证","点链接","点击链接","下载","屏幕共享","告诉他","发给他","给他","转给他","同意","好的","可以","我扫","我转","红包","买卡","卡密","租","解开","解锁","配合","照做","按他说的","按她说的","解冻","激活"];
+const SAFE_WORDS = ["报警","110","96110","警察","爸爸","妈妈","家长","父母","老师","大人","挂断","挂了","不理","不回复","不信","不点","不扫","不转","拒绝","举报","拉黑","删除","退出","骗子","假的","不告诉","不能告诉","不透露","不给","提醒","核实","官方","违反逻辑","不合理","违法","不配合","止损"];
+const RISK_WORDS = ["看看","观察","等等","先不","问问","考虑","犹豫","拖着","再说","试试","先加","先聊"];
+
+function analyzeInput(text, options) {
+  const t = text.toLowerCase();
+  function hit(arr) { return arr.some(function (w) { return t.includes(w); }); }
+  if (hit(DANGER_WORDS)) return options.find(function (o) { return o.kind === "bad"; }) || options[0];
+  if (hit(SAFE_WORDS))   return options.find(function (o) { return o.kind === "good"; }) || options[options.length - 1];
+  if (hit(RISK_WORDS))   return options.find(function (o) { return o.kind === "ok"; }) || options[options.length - 1];
+  return {
+    kind: "ok", score: 10,
+    feedback: "🤔 你的回答我还无法完全判读，但能感觉到你在犹豫。实战中的原则很明确：面对可疑的人和消息，不理会、不透露、不转账，第一时间找父母或老师核实。"
+  };
+}
+
+/* ================= 结算报告 ================= */
+function showReport() {
+  const s = score;
+  let medal, level, color, stars, desc;
+  if (s >= 85)      { medal = "🛡️"; level = "S 级 · 反诈高手"; color = "#57e0b0"; stars = "⭐⭐⭐⭐⭐";
+    desc = "全部话术没能拿下你。你不仅识破了套路，还知道用证据、举报和家长保护自己——把这份经验分享给你的同学，你就是身边人的反诈顾问。"; }
+  else if (s >= 70) { medal = "🎖️"; level = "A 级 · 反诈达人"; color = "#6ea8ff"; stars = "⭐⭐⭐⭐";
+    desc = "绝大多数陷阱你都没踩，只在个别环节犹豫过。回去看看『有风险』的那几条复盘，把犹豫的原因想清楚，你就是 S 级。"; }
+  else if (s >= 50) { medal = "⚠️"; level = "B 级 · 基础防御，仍需加固"; color = "#ffb46a"; stars = "⭐⭐⭐";
+    desc = "你有防骗意识，但骗子的恐吓、甜头和『最后一次』话术成功动摇过你。真实案件中，正是这些瞬间造成了数千到数万元的损失。建议每个场景再打一遍。"; }
+  else              { medal = "🚨"; level = "C 级 · 高危预警，立即补课"; color = "#ff6a6a"; stars = "⭐⭐";
+    desc = "如果这不是模拟，你刚才的损失可能已经上万元了。好消息是你现在安全地看清了每一个坑。把「三不一多」抄下来贴在书桌前，再从第一个场景重新开始。"; }
+
+  const reviewHtml = reviews.map(function (r, i) {
+    const parts = r.mark.split(" ");
+    return '<div class="review-item">' +
+      '<div class="mark">' + parts[0] + '</div>' +
+      '<div><b>' + escapeHtml(parts.slice(1).join(" ")) + '</b> · 回合' + (i + 1) + ' · ' + escapeHtml(r.label) + '<br>' + escapeHtml(r.feedback) + '</div>' +
+      '</div>';
+  }).join("");
+
+  const casesHtml = (current.cases || []).map(function (c) {
+    return '<div class="case-item">' +
+      '<b>' + escapeHtml(c.t) + '</b>' +
+      '<p>' + escapeHtml(c.d) + '</p>' +
+      '<span class="src">📂 来源：' + escapeHtml(c.s) + '</span>' +
+      '</div>';
+  }).join("");
+
+  document.getElementById("report-box").innerHTML =
+    '<div class="medal">' + medal + '</div>' +
+    '<h2>反诈能力鉴定报告</h2>' +
+    '<div class="score-big">' + s + '<small> / 100</small></div>' +
+    '<div class="stars">' + stars + '</div>' +
+    '<div class="level" style="background:' + color + '">' + level + '</div>' +
+    '<p class="desc">' + desc + '</p>' +
+    '<div class="review"><h3>📋 决策复盘</h3>' + reviewHtml + '</div>' +
+    '<div class="cases"><h3>📂 你刚才演练的骗局，都真实发生过</h3>' + casesHtml + '</div>' +
+    '<div class="report-actions">' +
+    '<button class="btn btn-primary" onclick="restartScenario()">↻ 重新挑战本场景</button>' +
+    '<button class="btn btn-ghost" onclick="goHome()">换一个场景演练</button>' +
+    '</div>' +
+    '<div class="source-note">以上案件信息来自公安机关警情通报、检察机关通报及法院公开判决（经人民日报、光明网、澎湃新闻、央广网、红网等媒体报道）；话术流程与受害人年龄、损失金额均取自公开披露内容。全国反诈专线 96110 · 报警电话 110</div>';
+  show("report-screen");
+}
+
+function restartScenario() {
+  const i = SCENARIOS.indexOf(current);
+  startScenario(i);
+}
+
+/* ================= 启动 ================= */
+renderHome();
+</script>
+<script src="extra1.js"></script>
+<script src="extra2.js"></script>
+<script src="extra3.js"></script>
+<script src="extra4.js"></script>
+<script src="extra5.js"></script>
+<script src="extra6.js"></script>
+<script src="hb1.js"></script>
+<script src="ticket.js"></script>
+<script src="teacher.js"></script>
+</body>
+</html>
